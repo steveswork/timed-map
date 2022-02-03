@@ -32,8 +32,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^5.0.0",
-    "jest-cli": "^26.6.3",
-    "nodemon": "^2.0.6"
+    "jest-cli": "^26.6.3"
   },
   "files": [
     "__mocks__/",
@@ -80,8 +79,6 @@
     "url": "https://github.com/steveswork/timed-map.git"
   },
   "scripts": {
-    "dev-watch": "nodemon --exec npm run debug",
-    "dev": "clear && npm run dev-watch",
     "test": "eslint --fix && jest --watchAll"
   },
   "version": "1.0.0"
