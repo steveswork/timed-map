@@ -1,0 +1,88 @@
+{
+  "author": {
+    "name": "Stephen Isienyi",
+    "email": "stephen.isienyi@webkrafting.com"
+  },
+  "bugs": {
+    "url": "https://github.com/steveswork/timed-map/issues"
+  },
+  "contributors": [
+    {
+      "email": "stephen.isienyi@webkrafting.com",
+      "name": "steveswork",
+      "url": "https://github.com/steveswork"
+    }
+  ],
+  "description": "A timed map javascript data structure ideal for app level caching and memoization.",
+  "dependencies": {
+    "esm": "^3.2.25",
+    "lodash.isinteger": "^4.0.4"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.10",
+    "@babel/node": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
+    "@types/jest-cli": "^24.3.0",
+    "babel-jest": "^26.6.3",
+    "babel-loader": "^8.2.2",
+    "eslint": "^7.15.0",
+    "eslint-config-standard": "^16.0.2",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-jest": "^24.1.3",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^5.0.0",
+    "jest-cli": "^26.6.3",
+    "nodemon": "^2.0.6"
+  },
+  "files": [
+    "__mocks__/",
+    "bin/",
+    "src/",
+    "test/",
+    ".babelrc",
+    ".eslintrc.js",
+    "debug.js",
+    "index.js",
+    "nodemon.json",
+    "package-lock.json",
+    "package.json"
+  ],
+  "homepage": "https://github.com/steveswork/timed-map#readme",
+  "jest": {
+    "transform": {
+      "\\.[jt]sx?$": "babel-jest"
+    }
+  },
+  "keywords": [
+    "cache",
+    "caching",
+    "in-app caching",
+    "in-app memoization",
+    "in-app memo",
+    "map",
+    "maxAge",
+    "max age",
+    "memoization",
+    "memoize",
+    "timed map",
+    "timed-map",
+    "ttl"
+  ],
+  "license": "ISC",
+  "main": "src/index.js",
+  "name": "@webkrafters/timed-map",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/steveswork/timed-map.git"
+  },
+  "scripts": {
+    "dev-watch": "nodemon --exec npm run debug",
+    "dev": "clear && npm run dev-watch",
+    "test": "eslint --fix && jest --watchAll"
+  },
+  "version": "1.0.0"
+}
