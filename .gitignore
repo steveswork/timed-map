@@ -4,3 +4,4 @@ node_modules
 .vscode
 report.*.json
 npm-debug.log*
+dist

@@ -8,10 +8,10 @@
   ],
   "description": "A timed map javascript data structure ideal for app level caching and memoization.",
   "dependencies": {
-    "esm": "^3.2.25",
     "lodash.isinteger": "^4.0.4"
   },
   "devDependencies": {
+    "@babel/cli": "^7.17.0",
     "@babel/core": "^7.12.10",
     "@babel/node": "^7.12.10",
     "@babel/preset-env": "^7.12.11",
@@ -28,16 +28,8 @@
     "jest-cli": "^26.6.3"
   },
   "files": [
-    "__mocks__/",
-    "bin/",
-    "src/",
-    "test/",
-    ".babelrc",
-    ".eslintrc.js",
-    "debug.js",
+    "dist",
     "index.js",
-    "nodemon.json",
-    "package-lock.json",
     "package.json"
   ],
   "homepage": "https://github.com/steveswork/timed-map#readme",
@@ -72,7 +64,8 @@
     "url": "git+https://github.com/steveswork/timed-map.git"
   },
   "scripts": {
+    "build": "rm -rf dist && babel src -d dist",
     "test": "eslint --fix && jest --watchAll"
   },
-  "version": "1.0.1"
+  "version": "1.0.4"
 }
