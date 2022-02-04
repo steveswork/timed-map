@@ -1,17 +1,10 @@
 {
-  "author": {
-    "name": "Stephen Isienyi",
-    "email": "stephen.isienyi@webkrafting.com"
-  },
+  "author": "Stephen Isienyi <stephen.isienyi@webkrafting.com>",
   "bugs": {
     "url": "https://github.com/steveswork/timed-map/issues"
   },
   "contributors": [
-    {
-      "email": "stephen.isienyi@webkrafting.com",
-      "name": "steveswork",
-      "url": "https://github.com/steveswork"
-    }
+    "steveswork <stephen.isienyi@webkrafting.com> (https://github.com/steveswork)"
   ],
   "description": "A timed map javascript data structure ideal for app level caching and memoization.",
   "dependencies": {
@@ -69,17 +62,17 @@
     "ttl"
   ],
   "license": "ISC",
-  "main": "src/index.js",
+  "main": "index.js",
   "name": "@webkrafters/timed-map",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/steveswork/timed-map.git"
+    "url": "git+https://github.com/steveswork/timed-map.git"
   },
   "scripts": {
     "test": "eslint --fix && jest --watchAll"
   },
-  "version": "1.0.0"
+  "version": "1.0.1"
 }
