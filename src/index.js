@@ -21,6 +21,42 @@ class Driver {
 		this.pruneDate = null;
 	}
 
+	/**
+	 * all available entries.
+	 *
+	 * @memberof TimedMap
+	 * @property
+	 * @readonly
+	 */
+	get entries() {
+		this.prune();
+		return Object.values( this.memoObject );
+	}
+
+	/**
+	 * has no map contents.
+	 *
+	 * @memberof TimedMap
+	 * @property
+	 * @readonly
+	 */
+	get isEmpty() {
+		this.prune();
+		return !Object.keys( this.memoObject ).length;
+	}
+
+	/**
+	 * all available keys
+	 *
+	 * @memberof TimedMap
+	 * @property
+	 * @readonly
+	 */
+	get keys() {
+		this.prune();
+		return Object.keys( this.memoObject );
+	}
+
 	get maxEntryAge() {
 		return this.maxAge;
 	}
@@ -41,16 +77,13 @@ class Driver {
 		);
 	}
 
-	get isEmpty() {
-		return !this.size;
-	}
-
 	get size() {
+		this.prune();
 		return Object.keys( this.memoObject ).length;
 	}
 
 	clear() {
-		if( this.isEmpty ) {
+		if( !Object.keys( this.memoObject ).length ) {
 			return;
 		}
 		this.memoObject = {};
@@ -66,19 +99,42 @@ class Driver {
 		return this.memoObject[ key ].value;
 	}
 
+	_getEntry( key ) {
+		return this.has( key )
+			? { ...this.memoObject[ key ] }
+			: undefined;
+	}
+
 	/**
 	 * @type {(key: K) => MapEntry<K>}
 	 * @template {string} K
 	 */
 	getEntry( key ) {
-		return this.has( key )
-			? this.memoObject[ key ]
-			: undefined;
+		const entry = this._getEntry( key );
+		if( !entry ) {
+			return undefined;
+		}
+		this.memoObject[ key ].createdAt = Date.now();
+		return entry;
 	}
 
 	/** @type {(key: string) => boolean} */
 	has( key ) {
-		return key in this.memoObject;
+		return !( key in this.memoObject )
+			? false
+			: this.isPrunableEntry( this.memoObject[ key ] )
+				? !!this.remove( key )
+				: true;
+	}
+
+	/**
+	 * checks if an entry has become prune-eligible
+	 *
+	 * @param {MapEntry<K>} entry
+	 * @template {string} K
+	 */
+	isPrunableEntry({ createdAt, ttl }) {
+		return Date.now() - createdAt >= ( ttl ?? this.maxAge );
 	}
 
 	/** @type {(ttlInput: number) => boolean} */
@@ -90,7 +146,7 @@ class Driver {
 
 	/** @type {(key: string) => *} */
 	peak( key ) {
-		const entry = this.getEntry( key );
+		const entry = this._getEntry( key );
 		if( entry ) {
 			return entry.value;
 		}
@@ -99,7 +155,7 @@ class Driver {
 	/** @type {() => void} */
 	prune() {
 		for( const key in this.memoObject ) {
-			if( this.memoObject[ key ].createdAt <= this.pruneDate ) {
+			if( this.isPrunableEntry( this.memoObject[ key ] ) ) {
 				delete this.memoObject[ key ];
 			}
 		}
@@ -107,15 +163,18 @@ class Driver {
 	}
 
 	/**
-	 * @type {(key: K, value: *) => MapEntry<K>}
+	 * @param {K} key
+	 * @param {*} value
+	 * @param {number} [ttl]
+	 * @returns {MapEntry<K>}
 	 * @template {string} K
 	 */
-	put( key, value ) {
-		const exEntry = this.getEntry( key );
+	put( key, value, ttl ) {
+		const exEntry = this._getEntry( key );
 		this.memoObject[ key ] = {
-			createdAt: Date.now(), key, value
+			createdAt: Date.now(), key, ttl, value
 		};
-		this.size === 1 && this.tryStartAging();
+		Object.keys( this.memoObject ).length === 1 && this.tryStartAging();
 		return exEntry;
 	}
 
@@ -124,18 +183,25 @@ class Driver {
 	 * @template {string} K
 	 */
 	remove( key ) {
-		const exEntry = this.memoObject[ key ];
+		let exEntry = { ...this.memoObject[ key ] };
 		if( !exEntry ) {
 			return;
+		}
+		if( this.isPrunableEntry( exEntry ) ) {
+			exEntry = undefined;
 		}
 		delete this.memoObject[ key ];
 		this.tryResetAging();
 		return exEntry;
 	}
 
+	toString() {
+		return 'TimedMap::Driver class';
+	}
+
 	/** @type {() => boolean} */
 	tryResetAging() {
-		if( !this.isEmpty ) {
+		if( Object.keys( this.memoObject ).length ) {
 			return false;
 		}
 		clearTimeout( this.timer );
@@ -145,7 +211,7 @@ class Driver {
 
 	/** @type {() => boolean} */
 	tryStartAging() {
-		if( this.isEmpty ) {
+		if( !Object.keys( this.memoObject ).length ) {
 			return false;
 		}
 		clearTimeout( this.timer );
@@ -160,9 +226,9 @@ class Driver {
 
 class TimedMap {
 	/**
-	 * Creates an instance of TimedMap. Removes entries un-read within the previous TTL cycle. `this.get(<entry key>)`
-	 * constitutes an entry read. To peak an entry value, use `this.peak(<entry key>)`. Please be sure to call `this.close()`
-	 * method on this object prior to deleting or setting it to null.
+	 * Creates an instance of TimedMap. Removes entries un-read within the previous TTL cycle. `this.get(<entry key>)` and
+	 * `this.getEntry(<entry key>)` constitute valid entry read operation. To peak an entry value, use `this.peak(<entry key>)`.
+	 * Please be sure to call `this.close()` method on this object prior to deleting or setting it to null.
 	 *
 	 * @param {number} [maxEntryAgeMillis] Default is 30 MINS in millisecs
 	 * @memberof TimedMap
@@ -172,14 +238,14 @@ class TimedMap {
 	}
 
 	/**
-	 * all available entries
+	 * all available entries.
 	 *
 	 * @memberof TimedMap
 	 * @property
 	 * @readonly
 	 */
 	get entries() {
-		return Object.values( this[ driverSymbol ].memoObject );
+		return this[ driverSymbol ].entries;
 	}
 
 	/**
@@ -201,7 +267,7 @@ class TimedMap {
 	 * @readonly
 	 */
 	get keys() {
-		return Object.keys( this[ driverSymbol ].memoObject );
+		return this[ driverSymbol ].keys;
 	}
 
 	get maxEntryAge() {
@@ -251,7 +317,7 @@ class TimedMap {
 	}
 
 	/**
-	 * accesses value at entry key. Subsequently restarts entry's TTL timer
+	 * accesses value at entry key. Subsequently restarts entry's TTL cycle
 	 *
 	 * @memberof TimedMap
 	 * @param {string} key
@@ -262,7 +328,7 @@ class TimedMap {
 	}
 
 	/**
-	 * accesses entry by key
+	 * accesses entry by key. Subsequently restarts entry's TTL cycle
 	 *
 	 * @memberof TimedMap
 	 * @param {K} key
@@ -301,11 +367,12 @@ class TimedMap {
 	 * @memberof TimedMap
 	 * @param {K} key
 	 * @param {*} value
+	 * @param {number} [ttl] in millis
 	 * @returns {MapEntry<K>} existing entry
 	 * @template {string} K
 	 */
-	put( key, value ) {
-		return this[ driverSymbol ].put( key, value );
+	put( key, value, ttl ) {
+		return this[ driverSymbol ].put( key, value, ttl );
 	}
 
 	/**
@@ -319,6 +386,10 @@ class TimedMap {
 	remove( key ) {
 		return this[ driverSymbol ].remove( key );
 	}
+
+	toString() {
+		return 'TimedMap class';
+	}
 };
 
 export default TimedMap;
@@ -327,6 +398,7 @@ export default TimedMap;
  * @typedef {Object} MapEntry
  * @property {number} MapEntry.createdAt //Date in millis epoch
  * @property {K} MapEntry.key
+ * @property {number} ttl // Duration in millis
  * @property {*} MapEntry.value
  * @template {string} K
  */
