@@ -47,7 +47,7 @@ This cleans up the underlying driver along with any system resources used such a
 
 ### constructor(maxEntryAgeMillis?: int): TimedMap
 
-Creates an instance of TimedMap. The optional `maxEntryAgeMillis` value is a class-level TTL in milliseconds applied to all entries in the map. A default of 1800000ms (i.e. 30 minutes) is assigned if omitted. Any entry which remained `un-reead` at the end of the TTL-cycle is removed. `get(key)` and `getEntry(key)` methods constitute the only valid entry `read` operations. To obtain entry value without restarting the entry TTL-cycle, use the `peak(key)` method. Individual TTLs may be assigned to entries upon insertion. The individual TTL supersedes the class-level TTL for the individual entry.
+Creates an instance of TimedMap. The optional `maxEntryAgeMillis` value is a class-level TTL in milliseconds applied to all entries in the map. A default of 1800000ms (i.e. 30 minutes) is assigned if omitted. Any entry which remained `un-read` at the end of the TTL-cycle is removed. `get(key)` and `getEntry(key)` methods constitute the only valid entry `read` operations. To obtain entry value without restarting the entry TTL-cycle, see the `peak(key)` method. Individual TTLs may be assigned to entries upon insertion. See the `put(...)` method. The individual TTL supersedes the class-level TTL for the individual entry.
 
 ### entries: int - readonly
 
@@ -81,7 +81,7 @@ Recommended pre-delete method: please use this method to release system resource
 
 Returns the value at key and restarts the entry's TTL cycle. This constitutes a valid `read` operation.
 
-### getEntry(key: string): MapEntry 
+### getEntry(key: string): MapEntry
 
 Returns the entry object residing at key. This constitutes a valid `read` operation.
 
@@ -95,7 +95,7 @@ Returns the value at key without restarting the entry's TTL cycle.
 
 ### put(key: string, value: any, ttl?: int ): MapEntry
 
-Creates a new map entry. If an entry existed at the key, it is overriden and returned. When the optional `ttl` value is provided. It will take precedence over the class-level TTL value for calculating TTL cycles for this entry. Please the [GET](#get) method
+Creates a new map entry. If an entry existed at the key, it is overriden and returned. When the optional `ttl` value is supplied, it takes precedence over the class-level TTL value for calculating TTL cycles for this entry. Please see the `get` and `getEntry` methods.
 
 ### remove( key: string): MapEntry
 
