@@ -1,3 +1,4 @@
+import { EVENT_TYPE as TYPE } from '../src/events/constants';
 import TimedMap from '../src';
 
 const DEFAULT_TEST_KEY = 'test0';
@@ -27,6 +28,12 @@ describe( 'TimedMap', () => {
 		expect( map.maxEntryAge ).toEqual( 18e5 );
 		map.close();
 	});
+
+	test( 'toSring method', () => {
+		const map = new TimedMap();
+		expect( map.toString() ).toEqual( 'TimedMap class' );
+		map.close();
+	})
 
 	describe( 'entry aging process', () => {
 
@@ -319,6 +326,279 @@ describe( 'TimedMap', () => {
 			});
 			it( 'returns removed entry', () => {
 				expect( previousEntry ).toEqual( returnedValue );
+			});
+		});
+
+		describe( 'events', () => {
+
+			let eventData;
+			beforeAll(() => {
+				eventData = Object.freeze({
+					attributes: expect.any( Object ),
+					data: undefined,
+					date: expect.any( Date ),
+					timestamp: expect.any( Number ),
+					type: undefined
+				});
+			});
+
+			describe( 'event administration', () => {
+				let timedMap;
+				afterAll(() => {
+					timedMap.close();
+				});
+				beforeAll(() => {
+					timedMap = new TimedMap();
+				});
+				describe( '`once` method: a one-time event', () => {
+					test( 'is automatically canceled after a single use', () => {
+						const listenerMock = jest.fn();
+						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+						timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+						timedMap.once( TYPE.CLEARED, listenerMock );
+						timedMap.clear();
+						expect( listenerMock ).toHaveBeenCalledTimes( 1 );
+						listenerMock.mockReset();
+						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+						timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+						timedMap.clear();
+						expect( listenerMock ).not.toHaveBeenCalled();
+					});
+					it( 'is cancelable prior to first use', () => {
+						const listenerMock = jest.fn();
+						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+						timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+						timedMap.once( TYPE.CLEARED, listenerMock );
+						timedMap.off( TYPE.CLEARED, listenerMock )
+						timedMap.clear();
+						expect( listenerMock ).not.toHaveBeenCalled();
+					});
+					it( 'allows user to capture arbitrary data as part of event attributes for later use', () => {
+						const attributes = { message: 'Mic check 1-2-1-2' };
+						const listenerMock = jest.fn();
+						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+						timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+						timedMap.once( TYPE.CLEARED, listenerMock, attributes );
+						timedMap.clear();
+						expect( listenerMock ).toHaveBeenCalledWith(
+							expect.objectContaining({ attributes })
+						)
+					});
+				});
+
+				describe( '`on` method: long-lived event', () => {
+					test( 'is not automatically canceled after a single use', () => {
+						const listenerMock = jest.fn();
+						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+						timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+						timedMap.on( TYPE.CLEARED, listenerMock );
+						timedMap.clear();
+						expect( listenerMock ).toHaveBeenCalledTimes( 1 );
+						listenerMock.mockReset();
+						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+						timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+						timedMap.clear();
+						expect( listenerMock ).toHaveBeenCalledTimes( 1 );
+					});
+					it( 'allows user to capture arbitrary data as part of event attributes for later use', () => {
+						const attributes = { message: 'Mic check 1-2-1-2' };
+						const listenerMock = jest.fn();
+						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+						timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+						timedMap.on( TYPE.CLEARED, listenerMock, attributes );
+						timedMap.clear();
+						expect( listenerMock ).toHaveBeenCalledWith(
+							expect.objectContaining({ attributes })
+						)
+					});
+				});
+
+				describe( 'event cancellation', () => {
+					test( '`off` method: remove event listener by listener reference', () => {
+						const listenerMock = jest.fn();
+						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+						timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+						timedMap.on( TYPE.CLEARED, listenerMock );
+						timedMap.clear();
+						expect( listenerMock ).toHaveBeenCalledTimes( 1 );
+						listenerMock.mockReset();
+						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+						timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+						timedMap.off( TYPE.CLEARED, listenerMock );
+						timedMap.clear();
+						expect( listenerMock ).not.toHaveBeenCalled();
+					});
+					test( '`offById` method: remove event listener by event id', () => {
+						const listenerMock = jest.fn();
+						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+						timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+						const eventId = timedMap.on( TYPE.CLEARED, listenerMock );
+						timedMap.clear();
+						expect( listenerMock ).toHaveBeenCalledTimes( 1 );
+						listenerMock.mockReset();
+						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+						timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+						timedMap.offById( eventId );
+						timedMap.clear();
+						expect( listenerMock ).not.toHaveBeenCalled();
+					});
+				})
+			});
+
+			describe( `${ TYPE.AUTO_RENEWED } event`, () => {
+				it( 'is emitted per `read` operation after completing all current tasks', async () => {
+					const renewableMap = new TimedMap( 1000 );
+					renewableMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+					const listenerMock = jest.fn();
+					renewableMap.on( TYPE.AUTO_RENEWED, listenerMock );
+					renewableMap.get( ENTRY2_KEY ); // read operation
+					renewableMap.peak( ENTRY2_KEY ); // non-read operation
+					renewableMap.getEntry( ENTRY2_KEY ); // read operation
+					await new Promise( resolve => setTimeout(() => { // wait for emit at end of task queue
+						renewableMap.close();
+						expect( listenerMock.mock.calls.length ).toBe( 2 );
+						listenerMock.mock.calls.forEach( c => {
+							expect( c[ 0 ] ).toEqual({
+								...eventData,
+								data: {
+									key: ENTRY2_KEY,
+									createdAt: expect.any( Number ),
+									previouslyCreatedAt: expect.any( Number )
+								},
+								type: TYPE.AUTO_RENEWED
+							})
+						});
+						resolve();
+					}, 300 ) );
+				})
+			});
+
+			describe( `${ TYPE.CLEARED } event`, () => {
+				it( 'is emitted per map reset operations', () => {
+					const clearableMap = new TimedMap( 1000 );
+					clearableMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+					clearableMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+					const listenerMock = jest.fn();
+					clearableMap.on( TYPE.CLEARED, listenerMock );
+					clearableMap.clear(); // reset operation
+					clearableMap.peak( DEFAULT_TEST_KEY ); // non-reset operation
+					clearableMap.close();
+					expect( listenerMock ).toHaveBeenCalledTimes( 1 );
+					expect( listenerMock ).toHaveBeenCalledWith({
+						...eventData,
+						data: {
+							removed: expect.arrayContaining([ DEFAULT_ENTRY ])
+						},
+						type: TYPE.CLEARED
+					});
+				});
+			});
+
+			describe( `${ TYPE.CLOSING } event`, () => {
+				it( 'is emitted before map close operation', () => {
+					const closableMap = new TimedMap( 1000 );
+					closableMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+					const listenerMock = jest.fn();
+					closableMap.on( TYPE.CLOSING, listenerMock );
+					closableMap.close(); // close operation
+					expect(() => {
+						closableMap.peak( ENTRY2_KEY ); // confirm close operation
+					}).toThrow();
+					expect( listenerMock ).toHaveBeenCalledTimes( 1 );
+					expect( listenerMock ).toHaveBeenCalledWith({
+						...eventData,
+						type: TYPE.CLOSING
+					});
+				})
+			});
+
+			describe( `${ TYPE.PRUNED } event`, () => {
+				it( 'is emitted after pruning outdated entries', async () => {
+					const prunableMap = new TimedMap( 250 );
+					prunableMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE, 1000 );
+					prunableMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+					const listenerMock = jest.fn();
+					prunableMap.on( TYPE.PRUNED, listenerMock );
+					await new Promise( resolve => setTimeout(() => { // wait for prune to have been triggered at end of ttl cyle
+						prunableMap.close();
+						expect( listenerMock ).toHaveBeenCalledTimes( 1 );
+						expect( listenerMock ).toHaveBeenCalledWith({
+							...eventData,
+							data: {
+								removed: [{
+									...DEFAULT_ENTRY,
+									key: ENTRY2_KEY,
+									value: ENTRY2_VALUE
+								}]
+							},
+							type: TYPE.PRUNED
+						});
+						resolve();
+					}, 300 ) );
+				});
+			});
+
+			describe( `${ TYPE.PUT } event`, () => {
+				it( 'is emitted per `put` entry operation after completing all current tasks', async () => {
+					const OLD_TEST_VALUE = 'This is an old test2 value...';
+					const putableMap = new TimedMap( 1000 );
+					putableMap.put( ENTRY2_KEY, OLD_TEST_VALUE );
+					const listenerMock = jest.fn();
+					const next = () => new Promise( resolve => setTimeout(() => { // wait for emit at end of task queue
+						putableMap.close();
+						expect( listenerMock ).toHaveBeenCalledTimes( 1 );
+						expect( listenerMock ).toHaveBeenCalledWith({
+							...eventData,
+							data: {
+								current: {
+									...DEFAULT_ENTRY,
+									key: ENTRY2_KEY,
+									value: ENTRY2_VALUE
+								},
+								previous: {
+									...DEFAULT_ENTRY,
+									key: ENTRY2_KEY,
+									value: OLD_TEST_VALUE
+								}
+							},
+							type: TYPE.PUT
+						});
+						resolve();
+					}, 300 ) );
+					await new Promise( resolve => setTimeout( async () => { // delay adding listener to allow previous `put` tasks to complete
+						putableMap.on( TYPE.PUT, listenerMock );
+						putableMap.put( ENTRY2_KEY, ENTRY2_VALUE ); // put entry operation
+						putableMap.peak( ENTRY2_KEY ); // non-put entry operation
+						putableMap.getEntry( ENTRY2_KEY ); // non-put operation
+						await next();
+						resolve();
+					}, 0 ) );
+				});
+			});
+
+			describe( `${ TYPE.REMOVED } event`, () => {
+				it( 'is emitted to notify observers of entry removal after completing all current tasks', async () => {
+					const removableMap = new TimedMap();
+					removableMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE, 1000 );
+					const listenerMock = jest.fn();
+					removableMap.on( TYPE.REMOVED, listenerMock );
+					removableMap.remove( DEFAULT_TEST_KEY );
+					await new Promise( resolve => setTimeout(() => { // wait for remove to have been triggered at end of task queue completion
+						removableMap.close();
+						expect( listenerMock ).toHaveBeenCalledTimes( 1 );
+						expect( listenerMock ).toHaveBeenCalledWith({
+							...eventData,
+							data: {
+								removed: {
+									...DEFAULT_ENTRY,
+									ttl: 1000
+								}
+							},
+							type: TYPE.REMOVED
+						});
+						resolve();
+					}, 300 ) );
+				});
 			});
 		});
 	});

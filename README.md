@@ -7,7 +7,7 @@ npm i -S @webkrafters/timed-map
 
 ## Description
 
-A timed map javascript data structure.
+An observable timed map javascript data structure.
 Tracks and removes outdated infrequently `read` entries.
 
 ## Ideal Use-case
@@ -89,6 +89,22 @@ Returns the entry object residing at key. This constitutes a valid `read` operat
 
 Verifies the presence of a valid map entry at this key
 
+### off(type: EventType, listener: Eventlistener): void
+
+Cancels event by listener function reference. Please see Events section below for more on event types and event listener.
+
+### offById(eventId: string): void
+
+Cancels event by event ID. Please see Events section below for more on event ID.
+
+### on(type: EventType, listener: Eventlistener, attributes?: Object): string
+
+Subscribes to event of event type and returns unique eventId. Supply any additional info to capture as part of this event to the optional `attribute` object argument. Please see Events section below for more on event types, event ID and event listener.
+
+### once(type: EventType, listener: Eventlistener, attributes?: Object): string
+
+Subscribes to one-use event of event type and returns unique eventId. Supply any additional info to capture as part of this event to the optional `attribute` object argument. Please see Events section below for more on event types, event ID and event listener.
+
 ### peak(key: string): any
 
 Returns the value at key without restarting the entry's TTL cycle. 
@@ -100,6 +116,42 @@ Creates a new map entry. If an entry existed at the key, it is overriden and ret
 ### remove( key: string): MapEntry
 
 If an entry existed at the key, it is removed and returned.
+
+## Events
+
+This map is observable and provides pathways for notifying observers of relevant changes within. For this purpose, six event types have been provided.
+
+### Event Map Table
+-----------------------------------------------------------------------------------------------------
+|Event Type   |Trigger												  |Event Data
+|-------------|-------------------------------------------------------|-------------------------------
+|AUTO_RENEWED | After an entry read (See valid read operations above) |key: string<br/>createdAt: int<br />previouslyCreatedAt: int
+|CLEARED      | After a map `clear` operation						  |removed: MapEntry[]
+|CLOSING      | The `close` method call prior to clean up operation.  |undefined
+|PRUNED       | After pruning outdated entries						  |removed: MapEntry[]
+|PUT          | After a `put` method call operation					  |current: MapEntry<br />previous: MapEntry
+|REMOVED      | After a `remove` method call operation				  |removed: MapEntry
+--------------------------------------------------------------------------------------------------------
+
+### Event Listener
+
+The event listener is triggered with a lone argument: the event payload. The event payload object emitted contains the following information:
+
+<b>attributes:</b> Object (Please see the `on` method discussion above)<br />
+<b>data:</b> Event Data Object (See Event Map Table above)<br /> 
+<b>date:</b> Date - event date<br />
+<b>timestamp:</b> int - event date in milliseconds<br />
+<b>type:</b> Event Type (See Event Map Table above)<br />
+
+### Event ID
+
+Every subscribed event listener is assigned a unique event ID during subscription. The `on` and `once` methods constitute the two avenues for event subscription. These methods return the unique event ID correspondingly. While the listener function reference remains the most popular means for identifying events for cancellation, the eventID is the surest means of accomplishing same purpose. Please see the `off` and `offById` methods.
+
+
+
+
+
+
 
 ## License
 
