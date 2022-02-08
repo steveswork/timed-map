@@ -95,7 +95,7 @@ class TimedMap {
 	 */
 	close() {
 		clearTimeout( this[ driverSymbol ].timer );
-		this[ driverSymbol ].events.emit( EVENT_TYPE.CLOSING );
+		this[ driverSymbol ].events.emitNow( EVENT_TYPE.CLOSING );
 		delete this[ driverSymbol ];
 	}
 

@@ -133,6 +133,10 @@ This map is observable and provides pathways for notifying observers of relevant
 |REMOVED      | After a `remove` method call operation				  |removed: MapEntry
 --------------------------------------------------------------------------------------------------------
 
+<u><b>Timing:</b></u> Excluding the `CLOSE` event, all event listeners are scheduled to run at the conclusion of previously scheduled tasks. `CLOSE` event listeners are run immediately.
+
+-------------------------------------------------------------------------------------------------
+
 ### Event Listener
 
 The event listener is triggered with a lone argument: the event payload. The event payload object emitted contains the following information:
@@ -140,12 +144,13 @@ The event listener is triggered with a lone argument: the event payload. The eve
 <b>attributes:</b> Object (Please see the `on` method discussion above)<br />
 <b>data:</b> Event Data Object (See Event Map Table above)<br /> 
 <b>date:</b> Date - event date<br />
+<b>id:</b> string - event ID<br />
 <b>timestamp:</b> int - event date in milliseconds<br />
 <b>type:</b> Event Type (See Event Map Table above)<br />
 
 ### Event ID
 
-Every subscribed event listener is assigned a unique event ID during subscription. The `on` and `once` methods constitute the two avenues for event subscription. These methods return the unique event ID correspondingly. While the listener function reference remains the most popular means for identifying events for cancellation, the eventID is the surest means of accomplishing same purpose. Please see the `off` and `offById` methods.
+Every subscribed event listener is assigned a unique event ID during subscription. The `on` and `once` methods constitute the two avenues for event subscription. These methods return the unique event ID correspondingly. While the listener function reference remains the most popular means for identifying events for cancellation, the event ID is the surest means of accomplishing same purpose. Please see the `off` and `offById` methods.
 
 
 

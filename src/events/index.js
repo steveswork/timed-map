@@ -1,3 +1,5 @@
+import cloneDeep from 'lodash.clonedeep';
+
 import {
 	DELIMITER,
 	EVENTDATA_MAPPER as MAPPER,
@@ -6,13 +8,42 @@ import {
 
 const TYPES = Object.values( TYPE );
 
+const SCHEDULED_EMIT_WARNING = ( s, eventId ) => `\
+Issues communicating event ID  ${ eventId }.\
+May consider using the \`emitNow\` method.\
+`;
+
 const INVALID_TYPE_ERROR_MSG = ( str, type ) => `Invalid event type: ${ type }. Valid event types are: ${ TYPES }`;
 
 const entryCounterSymbol = Symbol( 'ENTRY_COUNTER' );
+const calcSharedDataSymbol = Symbol( 'CALC_SHARED_DATA' )
 const hasTypeListenersSymbol = Symbol( 'HAS_TYPE_LISTENERS' );
 const listenersSymbol = Symbol( 'LISTENERS' );
 
 class Events {
+
+	/**
+	 * Defines data shared among listeners.
+	 *
+	 * @param {T} type
+	 * @param {...any} [data] is equal to arguments of ./constantsjs::EVENTDATA_MAPPER[T]
+	 * @returns {SharedEventInfo<T>} SharedData
+	 * @template {EventType} T
+	 * @see {import("./constants").EVENTDATA_MAPPER}
+	 * @memberof Events
+	 */
+	[ calcSharedDataSymbol ]( type, ...data ) {
+		if( !this[ hasTypeListenersSymbol ]( type ) ) {
+			return;
+		}
+		const timestamp = Date.now();
+		return ({
+			data: MAPPER[ type ]( ...data ),
+			date: new Date( timestamp ),
+			timestamp,
+			type
+		});
+	}
 
 	/**
 	 * checks if listeners are currently registered for a given event type
@@ -42,6 +73,8 @@ class Events {
 	}
 
 	/**
+	 * Schedules events to run immediately at the completion of previously scheduled tasks.
+	 *
 	 * @param {T} type
 	 * @param {...any} [data] is equal to arguments of ./constantsjs::EVENTDATA_MAPPER[T]
 	 * @template {EventType} T
@@ -49,28 +82,56 @@ class Events {
 	 * @memberof Events
 	 */
 	emit( type, ...data ) {
-		if( !this[ hasTypeListenersSymbol ]( type ) ) {
+		const eventData = this[ calcSharedDataSymbol ]( type, ...data );
+		if( eventData === undefined ) {
 			return;
 		}
-		const timestamp = Date.now();
-		const eventData = Object.freeze({
-			data: MAPPER[ type ]( ...data ),
-			date: new Date( timestamp ),
-			timestamp,
-			type
-		});
-		const listeners = this[ listenersSymbol ][ type ];
-		Object.keys( listeners )
-			.filter( k => {
-				listeners[ k ].listen({
-					attributes: listeners[ k ].attributes,
-					...eventData
-				});
-				return listeners[ k ].once;
-			})
-			.forEach( k => {
+		const listeners = cloneDeep( this[ listenersSymbol ][ type ] );
+		for( const k in listeners ) {
+			if( listeners[ k ].once ) {
 				delete this[ listenersSymbol ][ type ][ k ];
+			}
+		}
+		setTimeout(() => {
+			for( const k in listeners ) {
+				try {
+					listeners[ k ].listen({
+						attributes: listeners[ k ].attributes,
+						id: listeners[ k ].id,
+						...eventData
+					});
+				} catch( e ) {
+					console.warn( SCHEDULED_EMIT_WARNING`${ listeners[ k ].id }`, e );
+				}
+			}
+		}, 0 );
+	}
+
+	/**
+	 * Runs events immediately.
+	 *
+	 * @param {T} type
+	 * @param {...any} [data] is equal to arguments of ./constantsjs::EVENTDATA_MAPPER[T]
+	 * @template {EventType} T
+	 * @see {import("./constants").EVENTDATA_MAPPER}
+	 * @memberof Events
+	 */
+	emitNow( type, ...data ) {
+		const eventData = this[ calcSharedDataSymbol ]( type, ...data );
+		if( eventData === undefined ) {
+			return;
+		}
+		const listeners = this[ listenersSymbol ][ type ];
+		for( const k in listeners ) {
+			listeners[ k ].listen({
+				attributes: listeners[ k ].attributes,
+				id: listeners[ k ].id,
+				...eventData
 			});
+			if( listeners[ k ].once ) {
+				delete this[ listenersSymbol ][ type ][ k ];
+			}
+		}
 	}
 
 	/**
@@ -107,7 +168,7 @@ class Events {
 	 * @param {T} type
 	 * @param {Listener<T>} listener
 	 * @param {Attributes} [attributes] Any additional info to attribute to this event
-	 * @returns {string} eventId `${event_type}_${subscription_number}`
+	 * @returns {string} event ID `${event_type}_${subscription_number}`
 	 * @template {EventType} T
 	 * @memberof Events
 	 */
@@ -115,10 +176,12 @@ class Events {
 		if( !( type in this[ listenersSymbol ] ) ) {
 			throw TypeError( INVALID_TYPE_ERROR_MSG`${ type }` );
 		}
-		this[ listenersSymbol ][ type ][ ++this[ entryCounterSymbol ] ] = {
-			attributes, listen: listener
+		const regIndex = ++this[ entryCounterSymbol ];
+		const id = `${ type }${ DELIMITER }${ regIndex }`;
+		this[ listenersSymbol ][ type ][ regIndex ] = {
+			attributes, id, listen: listener
 		};
-		return `${ type }${ DELIMITER }${ this[ entryCounterSymbol ] }`;
+		return id;
 	}
 
 	/**
@@ -127,7 +190,7 @@ class Events {
 	 * @param {T} type
 	 * @param {Listener<T>} listener
 	 * @param {Attributes} [attributes] Any additional info to attribute to this event
-	 * @returns {string} eventId `${event_type}_${subscription_number}`
+	 * @returns {string} event ID `${event_type}_${subscription_number}`
  	 * @template {EventType} T
 	 * @memberof Events
 	 */
@@ -143,6 +206,10 @@ export default Events;
 
 /**
  * @typedef {import("./constants").Listener<T>} Listener
+ * @template {EventType} T
+ */
+/**
+ * @typedef {import("./constants").SharedEventInfo<T>} SharedEventInfo
  * @template {EventType} T
  */
 /** @typedef {import("./constants").Attributes} Attributes */

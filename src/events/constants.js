@@ -47,22 +47,32 @@ export const EVENTDATA_MAPPER = Object.freeze({
 
 /** @typedef {import("../index").MapEntry<string>} MapEntry */
 /**
- * @typedef {(event: {
+ * @typedef {(event: EventInfo<T>) => void} Listener
+ * @template {EventType} T
+ */
+/**
+ * @typedef {{
  * 		attributes: Attributes,
+ *		id: string
+ * } & SharedEventInfo<T>} EventInfo
+ * @template {EventType} T
+ */
+/**
+ * @typedef {{
  * 		data: EventData[T],
  *		date: Date,
  * 		timestamp: number,
  * 		type: T
- * }) => void} Listener
+ * }} SharedEventInfo
  * @template {EventType} T
  */
 /** @typedef {{[x: string]: any}} Attributes */
 /**
- * @typedef {{
- * 		attributes: Attributes,
- * 		listen: Listener<T>,
- * 		once?: boolean
- * }} ListenerInfo
+ * @typedef {Object} ListenerInfo
+ * @property {Attributes} attributes
+ * @property {string} id // Event ID in format: `${event_type}@@@${subscription_number}`
+ * @property {Listener<T>} listen
+ * @property {boolean} [once]
  * @template {EventType} T
  */
 /** @typedef {{[K in EventType]: ListenerInfo<K>}} ListenerInfoContainer */

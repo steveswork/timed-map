@@ -105,9 +105,7 @@ class Driver {
 		const createdAt = Date.now();
 		const previouslyCreatedAt = this.memoObject[ key ].createdAt;
 		this.memoObject[ key ].createdAt = createdAt;
-		setTimeout(() => {
-			this.events.emit( TYPE.AUTO_RENEWED, key, createdAt, previouslyCreatedAt );
-		}, 0 );
+		this.events.emit( TYPE.AUTO_RENEWED, key, createdAt, previouslyCreatedAt );
 		return this.memoObject[ key ].value;
 	}
 
@@ -128,9 +126,7 @@ class Driver {
 		}
 		const createdAt = Date.now()
 		this.memoObject[ key ].createdAt = createdAt;
-		setTimeout(() => {
-			this.events.emit( TYPE.AUTO_RENEWED, key, createdAt, entry.createdAt );
-		}, 0 );
+		this.events.emit( TYPE.AUTO_RENEWED, key, createdAt, entry.createdAt );
 		return entry;
 	}
 
@@ -194,11 +190,11 @@ class Driver {
 			createdAt: Date.now(), key, ttl, value
 		};
 		Object.keys( this.memoObject ).length === 1 && this.tryStartAging();
-		setTimeout(() => this.events.emit(
+		this.events.emit(
 			TYPE.PUT,
 			cloneDeep( this.memoObject[ key ] ),
 			exEntry
-		), 0 );
+		);
 		return exEntry;
 	}
 
@@ -216,7 +212,7 @@ class Driver {
 		}
 		delete this.memoObject[ key ];
 		this.tryResetAging();
-		setTimeout(() => this.events.emit( TYPE.REMOVED, exEntry ), 0 );
+		this.events.emit( TYPE.REMOVED, exEntry );
 		return exEntry;
 	}
 
