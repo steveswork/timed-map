@@ -352,6 +352,13 @@ describe( 'TimedMap', () => {
 					timedMap = new TimedMap();
 				});
 				describe( '`once` method: a one-time event', () => {
+					it( 'returns event ID matching the pattern: `^[A-Z]+(_[A-Z]+)?@@@[0-9]+$', () => {
+						const fn = () => {};
+						expect( map.on( 'AUTO_RENEWED', fn ) ).toEqual(
+							expect.stringMatching( /^[A-Z]+(_[A-Z]+)?@@@[0-9]+$/ )
+						);
+						map.off( 'AUTO_RENEWED', fn );
+					});
 					test( 'is automatically canceled after a single use', async () => {
 						const listenerMock = jest.fn();
 						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
@@ -401,6 +408,13 @@ describe( 'TimedMap', () => {
 				});
 
 				describe( '`on` method: long-lived event', () => {
+					it( 'returns event ID matching the pattern: `^[A-Z]+(_[A-Z]+)?@@@[0-9]+$', () => {
+						const fn = () => {};
+						expect( map.on( 'AUTO_RENEWED', fn ) ).toEqual(
+							expect.stringMatching( /^[A-Z]+(_[A-Z]+)?@@@[0-9]+$/ )
+						);
+						map.off( 'PUT', fn );
+					});
 					test( 'is not automatically canceled after a single use', async () => {
 						const listenerMock = jest.fn();
 						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
