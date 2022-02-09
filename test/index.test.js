@@ -1,4 +1,4 @@
-import { EVENT_TYPE as TYPE } from '../src/events/constants';
+import { DELIMITER, EVENT_TYPE as TYPE } from '../src/events/constants';
 import TimedMap from '../src';
 
 const DEFAULT_TEST_KEY = 'test0';
@@ -351,103 +351,108 @@ describe( 'TimedMap', () => {
 				beforeAll(() => {
 					timedMap = new TimedMap();
 				});
-				describe( '`once` method: a one-time event', () => {
-					it( 'returns event ID matching the pattern: `^[A-Z]+(_[A-Z]+)?@@@[0-9]+$', () => {
+				describe( 'event subscription', () => {
+					const eventIDPattern = new RegExp( '^[A-Z]+(_[A-Z]+)?' + DELIMITER + '[0-9]+$' );
+					const testEventId = ( subscriptionMethodName, eventType ) => () => {
 						const fn = () => {};
-						expect( map.on( 'AUTO_RENEWED', fn ) ).toEqual(
-							expect.stringMatching( /^[A-Z]+(_[A-Z]+)?@@@[0-9]+$/ )
-						);
-						map.off( 'AUTO_RENEWED', fn );
-					});
-					test( 'is automatically canceled after a single use', async () => {
-						const listenerMock = jest.fn();
-						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
-						timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
-						timedMap.once( TYPE.CLEARED, listenerMock );
-						timedMap.clear();
-						const next = () => new Promise( resolve => setTimeout(() => {
-							expect( listenerMock ).not.toHaveBeenCalled();
-							resolve();
-						}, 0 ) );
-						await new Promise( resolve => setTimeout( async () => {
-							expect( listenerMock ).toHaveBeenCalledTimes( 1 );
-							listenerMock.mockReset();
-							timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
-							timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
-							timedMap.clear();
-							await next();
-							resolve();
-						}, 0 ) );
-					});
-					it( 'is cancelable prior to first use', async () => {
-						const listenerMock = jest.fn();
-						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
-						timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
-						timedMap.once( TYPE.CLEARED, listenerMock );
-						timedMap.off( TYPE.CLEARED, listenerMock )
-						timedMap.clear();
-						await new Promise( resolve => setTimeout(() => {
-							expect( listenerMock ).not.toHaveBeenCalled();
-							resolve();
-						}, 0 ) );
-					});
-					it( 'allows user to capture arbitrary data as part of event attributes for later use', async () => {
-						const attributes = { message: 'Mic check 1-2-1-2' };
-						const listenerMock = jest.fn();
-						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
-						timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
-						timedMap.once( TYPE.CLEARED, listenerMock, attributes );
-						timedMap.clear();
-						await new Promise( resolve => setTimeout(() => {
-							expect( listenerMock ).toHaveBeenCalledWith(
-								expect.objectContaining({ attributes })
-							);
-							resolve();
-						}, 0 ) );
-					});
-				});
+						const eventId = map[ subscriptionMethodName ]( eventType, fn );
+						expect( eventId ).toEqual( expect.stringMatching( eventIDPattern ) );
+						const idParts = eventId.split( DELIMITER );
+						expect( idParts[ 0 ] in TYPE ).toBe( true );
+						expect( +idParts[ 1 ] ).toEqual( expect.any( Number ) );
+						map.off( eventType, fn );
+					};
 
-				describe( '`on` method: long-lived event', () => {
-					it( 'returns event ID matching the pattern: `^[A-Z]+(_[A-Z]+)?@@@[0-9]+$', () => {
-						const fn = () => {};
-						expect( map.on( 'AUTO_RENEWED', fn ) ).toEqual(
-							expect.stringMatching( /^[A-Z]+(_[A-Z]+)?@@@[0-9]+$/ )
+					describe( '`once` method: a one-time event', () => {
+						it( 'returns event ID matching the pattern: <VALID_EVENT_TYPE><DELIMITER>[0-9]+$',
+							testEventId( 'once', TYPE.AUTO_RENEWED )
 						);
-						map.off( 'PUT', fn );
-					});
-					test( 'is not automatically canceled after a single use', async () => {
-						const listenerMock = jest.fn();
-						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
-						timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
-						timedMap.on( TYPE.CLEARED, listenerMock );
-						timedMap.clear();
-						const next = () => new Promise( resolve => setTimeout(() => {
-							expect( listenerMock ).toHaveBeenCalledTimes( 1 );
-							resolve();
-						}, 0 ) );
-						await new Promise( resolve => setTimeout( async () => {
-							expect( listenerMock ).toHaveBeenCalledTimes( 1 );
-							listenerMock.mockReset();
+						test( 'is automatically canceled after a single use', async () => {
+							const listenerMock = jest.fn();
 							timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
 							timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+							timedMap.once( TYPE.CLEARED, listenerMock );
 							timedMap.clear();
-							await next();
-							resolve();
-						}, 0 ) );
+							const next = () => new Promise( resolve => setTimeout(() => {
+								expect( listenerMock ).not.toHaveBeenCalled();
+								resolve();
+							}, 0 ) );
+							await new Promise( resolve => setTimeout( async () => {
+								expect( listenerMock ).toHaveBeenCalledTimes( 1 );
+								listenerMock.mockReset();
+								timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+								timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+								timedMap.clear();
+								await next();
+								resolve();
+							}, 0 ) );
+						});
+						it( 'is cancelable prior to first use', async () => {
+							const listenerMock = jest.fn();
+							timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+							timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+							timedMap.once( TYPE.CLEARED, listenerMock );
+							timedMap.off( TYPE.CLEARED, listenerMock )
+							timedMap.clear();
+							await new Promise( resolve => setTimeout(() => {
+								expect( listenerMock ).not.toHaveBeenCalled();
+								resolve();
+							}, 0 ) );
+						});
+						it( 'allows user to capture arbitrary data as part of event attributes for later use', async () => {
+							const attributes = { message: 'Mic check 1-2-1-2' };
+							const listenerMock = jest.fn();
+							timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+							timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+							timedMap.once( TYPE.CLEARED, listenerMock, attributes );
+							timedMap.clear();
+							await new Promise( resolve => setTimeout(() => {
+								expect( listenerMock ).toHaveBeenCalledWith(
+									expect.objectContaining({ attributes })
+								);
+								resolve();
+							}, 0 ) );
+						});
 					});
-					it( 'allows user to capture arbitrary data as part of event attributes for later use', async () => {
-						const attributes = { message: 'Mic check 1-2-1-2' };
-						const listenerMock = jest.fn();
-						timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
-						timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
-						timedMap.on( TYPE.CLEARED, listenerMock, attributes );
-						timedMap.clear();
-						await new Promise( resolve => setTimeout(() => {
-							expect( listenerMock ).toHaveBeenCalledWith(
-								expect.objectContaining({ attributes })
-							);
-							resolve();
-						}, 0 ) );
+
+					describe( '`on` method: long-lived event', () => {
+						it( 'returns event ID matching the pattern: <VALID_EVENT_TYPE><DELIMITER>[0-9]+$',
+							testEventId( 'on', TYPE.PUT )
+						);
+						test( 'is not automatically canceled after a single use', async () => {
+							const listenerMock = jest.fn();
+							timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+							timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+							timedMap.on( TYPE.CLEARED, listenerMock );
+							timedMap.clear();
+							const next = () => new Promise( resolve => setTimeout(() => {
+								expect( listenerMock ).toHaveBeenCalledTimes( 1 );
+								resolve();
+							}, 0 ) );
+							await new Promise( resolve => setTimeout( async () => {
+								expect( listenerMock ).toHaveBeenCalledTimes( 1 );
+								listenerMock.mockReset();
+								timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+								timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+								timedMap.clear();
+								await next();
+								resolve();
+							}, 0 ) );
+						});
+						it( 'allows user to capture arbitrary data as part of event attributes for later use', async () => {
+							const attributes = { message: 'Mic check 1-2-1-2' };
+							const listenerMock = jest.fn();
+							timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
+							timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
+							timedMap.on( TYPE.CLEARED, listenerMock, attributes );
+							timedMap.clear();
+							await new Promise( resolve => setTimeout(() => {
+								expect( listenerMock ).toHaveBeenCalledWith(
+									expect.objectContaining({ attributes })
+								);
+								resolve();
+							}, 0 ) );
+						});
 					});
 				});
 
