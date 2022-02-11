@@ -148,6 +148,8 @@ The event listener is triggered with a lone argument: the event payload. The eve
 <b>timestamp:</b> int - event date in milliseconds<br />
 <b>type:</b> Event Type (See Event Map Table above)<br />
 
+<u><b>Immutability:</b></u> With the exception of `attributes` and `date`, immutability is maintained on all properties of the event payload. The `date` property is a native Date instance object. The `attributes` property is presented to the user exactly as defined by the user.
+
 ### Event ID
 
 Every subscribed event listener is assigned a unique event ID during subscription. The `on` and `once` methods constitute the two avenues for event subscription. These methods return the unique event ID correspondingly. While the listener function reference remains the most popular means for identifying events for cancellation, the event ID is the surest means of accomplishing same purpose. Please see the `off` and `offById` methods.

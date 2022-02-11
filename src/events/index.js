@@ -1,4 +1,5 @@
 import cloneDeep from 'lodash.clonedeep';
+import isObject from 'lodash.isobject';
 
 import {
 	DELIMITER,
@@ -9,16 +10,57 @@ import {
 const TYPES = Object.values( TYPE );
 
 const SCHEDULED_EMIT_WARNING = ( s, eventId ) => `\
-Issues communicating event ID  ${ eventId }.\
-May consider using the \`emitNow\` method.\
+Issues communicating event ID  ${ eventId }. \
+If dealing with objects going out of scope, please consider using the \`emitNow\` method.\
 `;
 
 const INVALID_TYPE_ERROR_MSG = ( str, type ) => `Invalid event type: ${ type }. Valid event types are: ${ TYPES }`;
+
+const REF_ERROR_PATTERN = /^[Cc]annot\s+set\s+property\s+.+\s+of\s+undefined$/;
 
 const entryCounterSymbol = Symbol( 'ENTRY_COUNTER' );
 const calcSharedDataSymbol = Symbol( 'CALC_SHARED_DATA' )
 const hasTypeListenersSymbol = Symbol( 'HAS_TYPE_LISTENERS' );
 const listenersSymbol = Symbol( 'LISTENERS' );
+
+/** @param {*} v */
+const makeImmutable = v => {
+	if( !isObject( v ) ) {
+		return;
+	}
+	if( !Array.isArray( v ) ) {
+		Object.keys( v ).forEach( k => {
+			k = makeImmutable( v[ k ] );
+		});
+		Object.freeze( v );
+		return;
+	}
+	Object.freeze( v.forEach( makeImmutable ) );
+};
+
+/**
+ * @param {SharedEventInfo<T>} eventData
+ * @returns {(listner: ListenerInfo<T>) => void}
+ * @template {EventType} T
+ */
+const getListenerRunner = eventData => {
+	const { date, ...eData } = eventData;
+	return listener => {
+		try {
+			listener.listen( Object.freeze({
+				...eData,
+				attributes: cloneDeep( listener.attributes ),
+				date: cloneDeep( date ),
+				id: listener.id
+			}) );
+		} catch( e ) {
+			REF_ERROR_PATTERN.test( e.message ) && console.warn(
+				SCHEDULED_EMIT_WARNING`${ listener.id }`,
+				e
+			);
+		}
+	};
+};
 
 class Events {
 
@@ -36,13 +78,11 @@ class Events {
 		if( !this[ hasTypeListenersSymbol ]( type ) ) {
 			return;
 		}
-		const timestamp = Date.now();
-		return ({
-			data: MAPPER[ type ]( ...data ),
-			date: new Date( timestamp ),
-			timestamp,
-			type
-		});
+		const date = new Date();
+		const eData = MAPPER[ type ]( ...data );
+		const timestamp = date.getTime();
+		makeImmutable( eData );
+		return ({ data: eData, date, timestamp, type });
 	}
 
 	/**
@@ -92,19 +132,7 @@ class Events {
 				delete this[ listenersSymbol ][ type ][ k ];
 			}
 		}
-		setTimeout(() => {
-			for( const k in listeners ) {
-				try {
-					listeners[ k ].listen({
-						attributes: listeners[ k ].attributes,
-						id: listeners[ k ].id,
-						...eventData
-					});
-				} catch( e ) {
-					console.warn( SCHEDULED_EMIT_WARNING`${ listeners[ k ].id }`, e );
-				}
-			}
-		}, 0 );
+		setTimeout(() => Object.values( listeners ).forEach( getListenerRunner( eventData ), 0 ) );
 	}
 
 	/**
@@ -122,12 +150,9 @@ class Events {
 			return;
 		}
 		const listeners = this[ listenersSymbol ][ type ];
+		const run = getListenerRunner( eventData );
 		for( const k in listeners ) {
-			listeners[ k ].listen({
-				attributes: listeners[ k ].attributes,
-				id: listeners[ k ].id,
-				...eventData
-			});
+			run( listeners[ k ] );
 			if( listeners[ k ].once ) {
 				delete this[ listenersSymbol ][ type ][ k ];
 			}
@@ -206,6 +231,10 @@ export default Events;
 
 /**
  * @typedef {import("./constants").Listener<T>} Listener
+ * @template {EventType} T
+ */
+/**
+ * @typedef {import('./constants').ListenerInfo<T>} ListenerInfo
  * @template {EventType} T
  */
 /**
