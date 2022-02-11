@@ -74,5 +74,5 @@
     "build": "rm -rf dist && babel src -d dist",
     "test": "eslint --fix && jest --watchAll"
   },
-  "version": "1.2.7"
+  "version": "1.2.8"
 }

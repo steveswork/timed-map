@@ -133,7 +133,7 @@ This map is observable and provides pathways for notifying observers of relevant
 |REMOVED      | After a `remove` method call operation				  |removed: MapEntry
 --------------------------------------------------------------------------------------------------------
 
-<u><b>Timing:</b></u> Excluding the `CLOSE` event, all event listeners are scheduled to run at the conclusion of previously scheduled tasks. `CLOSE` event listeners are run immediately.
+<u><b>Timing:</b></u> Excluding the `CLOSING` event, all event listeners are scheduled to run at the conclusion of previously scheduled tasks. `CLOSING` event listeners are run immediately.
 
 -------------------------------------------------------------------------------------------------
 
