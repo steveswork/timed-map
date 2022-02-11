@@ -14,7 +14,9 @@ Issues communicating event ID  ${ eventId }. \
 If dealing with objects going out of scope, please consider using the \`emitNow\` method.\
 `;
 
-const INVALID_TYPE_ERROR_MSG = ( str, type ) => `Invalid event type: ${ type }. Valid event types are: ${ TYPES }`;
+const INVALID_TYPE_ERROR_MSG = ( str, type ) => `\
+Invalid event type: ${ type }. Valid event types are: [${ TYPES.join( ', ') }]\
+`;
 
 const REF_ERROR_PATTERN = /^[Cc]annot\s+set\s+property\s+.+\s+of\s+undefined$/;
 
@@ -30,7 +32,7 @@ const makeImmutable = v => {
 	}
 	if( !Array.isArray( v ) ) {
 		Object.keys( v ).forEach( k => {
-			k = makeImmutable( v[ k ] );
+			makeImmutable( v[ k ] );
 		});
 		Object.freeze( v );
 		return;

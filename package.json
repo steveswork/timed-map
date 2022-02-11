@@ -44,6 +44,8 @@
   "keywords": [
     "cache",
     "caching",
+    "event",
+    "events",
     "in-app caching",
     "in-app memoization",
     "in-app memo",
@@ -52,7 +54,9 @@
     "max age",
     "memoization",
     "memoize",
-    "timed map",
+    "observable",
+    "observable-map",
+    "time-map",
     "timed-map",
     "ttl"
   ],
@@ -70,5 +74,5 @@
     "build": "rm -rf dist && babel src -d dist",
     "test": "eslint --fix && jest --watchAll"
   },
-  "version": "1.2.2"
+  "version": "1.2.7"
 }
