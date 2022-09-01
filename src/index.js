@@ -24,7 +24,6 @@ class TimedMap {
 	 *
 	 * @memberof TimedMap
 	 * @property
-	 * @readonly
 	 * @returns {MapEntry<string>[]}
 	 */
 	get entries() {
@@ -36,7 +35,6 @@ class TimedMap {
 	 *
 	 * @memberof TimedMap
 	 * @property
-	 * @readonly
 	 */
 	get isEmpty() {
 		return this[ driverSymbol ].isEmpty;
@@ -47,7 +45,6 @@ class TimedMap {
 	 *
 	 * @memberof TimedMap
 	 * @property
-	 * @readonly
 	 */
 	get keys() {
 		return this[ driverSymbol ].keys;
@@ -73,7 +70,6 @@ class TimedMap {
 	 *
 	 * @memberof TimedMap
 	 * @property
-	 * @readonly
 	 */
 	get size() {
 		return this[ driverSymbol ].size;

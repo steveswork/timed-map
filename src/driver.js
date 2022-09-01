@@ -31,7 +31,6 @@ class Driver {
 	 *
 	 * @memberof TimedMap
 	 * @property
-	 * @readonly
 	 */
 	get entries() {
 		this.prune();
@@ -43,7 +42,6 @@ class Driver {
 	 *
 	 * @memberof TimedMap
 	 * @property
-	 * @readonly
 	 */
 	get isEmpty() {
 		this.prune();
@@ -55,7 +53,6 @@ class Driver {
 	 *
 	 * @memberof TimedMap
 	 * @property
-	 * @readonly
 	 */
 	get keys() {
 		this.prune();
@@ -87,7 +84,6 @@ class Driver {
 	 *
 	 * @memberof TimedMap
 	 * @property
-	 * @readonly
 	 */
 	get size() {
 		this.prune();

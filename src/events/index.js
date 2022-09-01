@@ -70,7 +70,7 @@ class Events {
 	 * Defines data shared among listeners.
 	 *
 	 * @param {T} type
-	 * @param {...any} [data] is equal to arguments of ./constantsjs::EVENTDATA_MAPPER[T]
+	 * @param {...any} data is equal to arguments of ./constantsjs::EVENTDATA_MAPPER[T]
 	 * @returns {SharedEventInfo<T>} SharedData
 	 * @template {EventType} T
 	 * @see {import("./constants").EVENTDATA_MAPPER}
@@ -118,7 +118,7 @@ class Events {
 	 * Schedules events to run immediately at the completion of previously scheduled tasks.
 	 *
 	 * @param {T} type
-	 * @param {...any} [data] is equal to arguments of ./constantsjs::EVENTDATA_MAPPER[T]
+	 * @param {...any} data is equal to arguments of ./constantsjs::EVENTDATA_MAPPER[T]
 	 * @template {EventType} T
 	 * @see {import("./constants").EVENTDATA_MAPPER}
 	 * @memberof Events
@@ -141,7 +141,7 @@ class Events {
 	 * Runs events immediately.
 	 *
 	 * @param {T} type
-	 * @param {...any} [data] is equal to arguments of ./constantsjs::EVENTDATA_MAPPER[T]
+	 * @param {...any} data is equal to arguments of ./constantsjs::EVENTDATA_MAPPER[T]
 	 * @template {EventType} T
 	 * @see {import("./constants").EVENTDATA_MAPPER}
 	 * @memberof Events
