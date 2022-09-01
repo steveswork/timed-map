@@ -25,6 +25,7 @@ class TimedMap {
 	 * @memberof TimedMap
 	 * @property
 	 * @readonly
+	 * @returns {MapEntry<string>[]}
 	 */
 	get entries() {
 		return this[ driverSymbol ].entries;
@@ -116,7 +117,7 @@ class TimedMap {
 	 * @memberof TimedMap
 	 * @param {K} key
 	 * @returns {MapEntry<K>}
-	 * @template {string} K
+	 * @template {string} [K=string]
 	 */
 	getEntry( key ) {
 		return this[ driverSymbol ].getEntry( key );
@@ -152,7 +153,7 @@ class TimedMap {
 	 * @param {*} value
 	 * @param {number} [ttl] in millis
 	 * @returns {MapEntry<K>} existing entry
-	 * @template {string} K
+	 * @template {string} [K=string]
 	 */
 	put( key, value, ttl ) {
 		return this[ driverSymbol ].put( key, value, ttl );
@@ -164,7 +165,7 @@ class TimedMap {
 	 * @memberof TimedMap
 	 * @param {K} key
 	 * @returns {MapEntry<K>} deleted entry
-	 * @template {string} K
+	 * @template {string} [K=string]
 	 */
 	remove( key ) {
 		return this[ driverSymbol ].remove( key );
@@ -174,8 +175,7 @@ class TimedMap {
 	 * Cancel event by listener function reference
 	 *
 	 * @param {T} type
-	 * @param {(event: {type: T, data: any}) => void} listener
-	 * @returns
+	 * @param {EventListener<T>} listener
 	 * @memberof TimedMap
 	 * @template {EventType} T
 	 */
@@ -197,7 +197,7 @@ class TimedMap {
 	 * Subscribe to event
 	 *
 	 * @param {T} type
-	 * @param {event: {type: T, data: any}) => void} listener
+	 * @param {EventListener<T>} listener
 	 * @param {Attributes} [attributes] Any additional info to attribute to this event
 	 * @returns {string} eventId `${event_type}_${subscription_number}`
 	 * @memberof TimedMap
@@ -211,7 +211,7 @@ class TimedMap {
 	 * Subscribe to one-emit event
 	 *
 	 * @param {T} type
-	 * @param {event: {type: T, data: any}) => void} listener
+	 * @param {EventListener<T>} listener
 	 * @param {Attributes} [attributes] Any additional info to attribute to this event
 	 * @returns {string} eventId `${event_type}_${subscription_number}`
 	 * @memberof TimedMap
@@ -226,16 +226,20 @@ class TimedMap {
 	}
 };
 
+/** @typedef {import("./types").Attributes} Attributes */
+
+/**
+ * @typedef {(event: {type: T, data: any}) => void} EventListener
+ * @template T
+ */
+
 /** @typedef {import("./events").EventType} EventType */
 
 export default TimedMap;
 
 /**
- * @typedef {Object} MapEntry
- * @property {number} MapEntry.createdAt //Date in millis epoch
- * @property {K} MapEntry.key
- * @property {number} ttl // Duration in millis
- * @property {*} MapEntry.value
+ * @typedef {import("./types").MapEntry<K>} MapEntry
  * @template {string} K
  */
-/** @typedef {NodeJS.Timeout} Timeout */
+
+/** @typedef {import("./types").Timeout} Timeout */

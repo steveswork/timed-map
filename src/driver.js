@@ -82,6 +82,13 @@ class Driver {
 		);
 	}
 
+	/**
+	 * number of currently stored entries
+	 *
+	 * @memberof TimedMap
+	 * @property
+	 * @readonly
+	 */
 	get size() {
 		this.prune();
 		return Object.keys( this.memoObject ).length;
@@ -117,7 +124,7 @@ class Driver {
 
 	/**
 	 * @type {(key: K) => MapEntry<K>}
-	 * @template {string} K
+	 * @template {string} [K=string]
 	 */
 	getEntry( key ) {
 		const entry = this._getEntry( key );
@@ -143,7 +150,7 @@ class Driver {
 	 * checks if an entry has become prune-eligible
 	 *
 	 * @param {MapEntry<K>} entry
-	 * @template {string} K
+	 * @template {string} [K=string]
 	 */
 	isPrunableEntry({ createdAt, ttl }) {
 		return Date.now() - createdAt >= ( ttl ?? this.maxAge );
@@ -182,7 +189,7 @@ class Driver {
 	 * @param {*} value
 	 * @param {number} [ttl]
 	 * @returns {MapEntry<K>}
-	 * @template {string} K
+	 * @template {string} [K=string]
 	 */
 	put( key, value, ttl ) {
 		const exEntry = this._getEntry( key );
@@ -200,7 +207,7 @@ class Driver {
 
 	/**
 	 * @type {(key: K) => MapEntry<K>}
-	 * @template {string} K
+	 * @template {string} [K=string]
 	 */
 	remove( key ) {
 		let exEntry = cloneDeep( this.memoObject[ key ] );
@@ -246,3 +253,8 @@ class Driver {
 };
 
 export default Driver;
+
+/**
+ * @typedef {import("./types").MapEntry<K>} MapEntry
+ * @template K
+ */

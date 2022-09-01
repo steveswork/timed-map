@@ -45,7 +45,7 @@ export const EVENTDATA_MAPPER = Object.freeze({
 	REMOVED: removedEntry => ({ removed: removedEntry })
 });
 
-/** @typedef {import("../index").MapEntry<string>} MapEntry */
+/** @typedef {import("../types").MapEntry<string>} MapEntry */
 /**
  * @typedef {(event: EventInfo<T>) => void} Listener
  * @template {EventType} T
@@ -66,7 +66,7 @@ export const EVENTDATA_MAPPER = Object.freeze({
  * }} SharedEventInfo
  * @template {EventType} T
  */
-/** @typedef {{[x: string]: any}} Attributes */
+/** @typedef {import("../types").Attributes} Attributes */
 /**
  * @typedef {Object} ListenerInfo
  * @property {Attributes} attributes
@@ -75,7 +75,7 @@ export const EVENTDATA_MAPPER = Object.freeze({
  * @property {boolean} [once]
  * @template {EventType} T
  */
-/** @typedef {{[K in EventType]: ListenerInfo<K>}} ListenerInfoContainer */
+/** @typedef {{[K in EventType]: {[eventId:string]: ListenerInfo<K>}}} ListenerInfoContainer */
 /** @typedef {keyof typeof EVENT_TYPE} EventType */
 /** @typedef {import("../constants").MapEntry} MapEntry */
 
