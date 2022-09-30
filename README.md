@@ -49,7 +49,7 @@ This cleans up the underlying driver along with any system resources used such a
 
 Creates an instance of TimedMap. The optional `maxEntryAgeMillis` value is a class-level TTL in milliseconds applied to all entries in the map. A default of 1800000ms (i.e. 30 minutes) is assigned if omitted. Any entry which remained `un-read` at the end of the TTL-cycle is removed. `get(key)` and `getEntry(key)` methods constitute the only valid entry `read` operations. To obtain entry value without restarting the entry TTL-cycle, see the `peak(key)` method. Individual TTLs may be assigned to entries upon insertion. See the `put(...)` method. The individual TTL supersedes the class-level TTL for the individual entry.
 
-### entries: int - readonly
+### entries: MapEntry[] - readonly
 
 Computed property: available entries.
 
@@ -57,7 +57,7 @@ Computed property: available entries.
 
 Computed property: check-flag confirming a map containing no entries.
 
-### keys: string[] - readonly
+### keys: string[] - readonlys
 
 Computed property: keys to all available entries.
 
