@@ -1,7 +1,12 @@
-import { DELIMITER, EVENT_TYPE as TYPE } from '../src/events/constants';
-import TimedMap from '../src';
+import TimedMap, { Listener, KeyType } from '../src';
 
-const DEFAULT_TEST_KEY = 'test0';
+import {
+	DELIMITER,
+	EVENT_TYPE as TYPE,
+	EventTypes
+} from '../src/events/constants';
+
+const DEFAULT_TEST_KEY : string = 'test0';
 const DEFAULT_TEST_VALUE = 'first test value';
 const ENTRY2_KEY = 'test2';
 const ENTRY2_VALUE = 'create a test2 entry';
@@ -19,7 +24,12 @@ const TIMED_ENTRY_MOCK = expect.objectContaining({
 	...DEFAULT_ENTRY, ttl: expect.any( Number )
 });
 
-const entryFinder = map => key => map.entries.find( k => k.key === key );
+function entryFinder<T>( map : TimedMap<T> ) {
+	function find<K extends KeyType >( key : K ) {
+		return map.entries.find( k => k.key === key );
+	}
+	return find;
+}
 
 describe( 'TimedMap', () => {
 
@@ -31,7 +41,7 @@ describe( 'TimedMap', () => {
 
 	test( 'toSring method', () => {
 		const map = new TimedMap();
-		expect( map.toString() ).toEqual( 'TimedMap class' );
+		expect( map.toString() ).toEqual( '@webKrafters/TimedMap class' );
 		map.close();
 	})
 
@@ -46,31 +56,31 @@ describe( 'TimedMap', () => {
 				// un-read entry removed after 1-second ttl cycle
 				expect( timedMap.has( DEFAULT_TEST_KEY ) ).toBe( false );
 				timedMap.close();
-				resolve();
+				resolve( undefined );
 			}, TTL_CYCLE ) );
 		});
 
 		it( 'extends entry TTL beyond the original 1-SECOND when read within the TTL cycle', async () => {
 			const TTL_CYCLE = 1000; // TTL 1-SECOND PER ENTRY (THOUGH RENEWABLE ONCE ENTRY READ)
 			const READ_POINT = 300;
-			const timedMap = new TimedMap( TTL_CYCLE );
+			const timedMap = new TimedMap<string>( TTL_CYCLE );
 			const findEntryAt = entryFinder( timedMap );
 			timedMap.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
 			expect( timedMap.size ).toEqual( 1 );
-			const originalCreatedAt = findEntryAt( DEFAULT_TEST_KEY ).createdAt;
+			const originalCreatedAt = findEntryAt( DEFAULT_TEST_KEY )!.createdAt;
 			await new Promise( resolve => setTimeout(() => {
 				// run read operation (i.e. `TimeMap::get(...)`) on `DEFAULT_TEST_KEY`
 				// within the current 1-second ttl cycle.
 				timedMap.get( DEFAULT_TEST_KEY );
-				resolve();
+				resolve( undefined );
 			}, READ_POINT ) );
 			await new Promise( resolve => setTimeout(() => {
 				// read entry exists beyond the current 1-second ttl cycle
 				expect( timedMap.has( DEFAULT_TEST_KEY ) ).toBe( true );
 				// read entry creation-date had been renewed
-				expect( findEntryAt( DEFAULT_TEST_KEY ).createdAt ).toBeGreaterThan( originalCreatedAt );
+				expect( findEntryAt( DEFAULT_TEST_KEY )!.createdAt ).toBeGreaterThan( originalCreatedAt );
 				timedMap.close();
-				resolve();
+				resolve( undefined );
 			}, TTL_CYCLE - READ_POINT ) );
 		});
 
@@ -86,19 +96,19 @@ describe( 'TimedMap', () => {
 				// though un-read, entry persists beyond
 				// the end of current TTL cycle
 				expect( timedMap.has( DEFAULT_TEST_KEY ) ).toBe( true );
-				resolve();
+				resolve( undefined );
 			}, TTL_CYCLE ) );
 			await new Promise( resolve => setTimeout(() => {
 				// un-read entry terminates at the end of own ttl
 				expect( timedMap.has( DEFAULT_TEST_KEY ) ).toBe( false );
 				timedMap.close();
-				resolve();
+				resolve( undefined );
 			}, CUSTOM_ENTRY_TTL - TTL_CYCLE ) );
 		});
 	});
 
 	describe( 'features', () => {
-		/** @type {TimedMap} */ let map;
+		let map : TimedMap<string>;
 		beforeAll(() => {
 			map = new TimedMap( 1000 );
 			map.put( DEFAULT_TEST_KEY, DEFAULT_TEST_VALUE );
@@ -126,6 +136,7 @@ describe( 'TimedMap', () => {
 			});
 			it( 'is readonly', () => {
 				expect(() => {
+					// @ts-ignore
 					map.entries = expect.arrayContaining([ ENTRY_MOCK ]);
 				}).toThrow()
 			});
@@ -140,6 +151,7 @@ describe( 'TimedMap', () => {
 			});
 			it( 'is readonly', () => {
 				expect(() => {
+					// @ts-ignore
 					map.isEmpty = true;
 				}).toThrow()
 			});
@@ -154,6 +166,7 @@ describe( 'TimedMap', () => {
 			});
 			it( 'is readonly', () => {
 				expect(() => {
+					// @ts-ignore
 					map.size = 23;
 				}).toThrow()
 			});
@@ -199,6 +212,7 @@ describe( 'TimedMap', () => {
 			});
 			it( 'is readonly', () => {
 				expect(() => {
+					// @ts-ignore
 					map.keys = EXPECTED_KEYS;
 				}).toThrow()
 			});
@@ -226,7 +240,7 @@ describe( 'TimedMap', () => {
 					await new Promise( resolve => setTimeout(() => {
 						map.get( DEFAULT_TEST_KEY );
 						expect( previouslyCreatedAt ).toBeLessThan( findEntryAt( DEFAULT_TEST_KEY ).createdAt );
-						resolve();
+						resolve( undefined );
 					}, 100 ) );
 				});
 			});
@@ -253,7 +267,7 @@ describe( 'TimedMap', () => {
 						expect( previouslyCreatedAt ).toBeLessThan(
 							findEntryAt( DEFAULT_TEST_KEY ).createdAt
 						);
-						resolve();
+						resolve( undefined );
 					}, 100 ) );
 				});
 			});
@@ -344,7 +358,7 @@ describe( 'TimedMap', () => {
 			});
 
 			describe( 'event administration', () => {
-				let timedMap;
+				let timedMap : TimedMap<string>;
 				afterAll(() => {
 					timedMap.close();
 				});
@@ -358,7 +372,7 @@ describe( 'TimedMap', () => {
 						const eventId = map[ subscriptionMethodName ]( eventType, fn );
 						expect( eventId ).toEqual( expect.stringMatching( eventIDPattern ) );
 						const idParts = eventId.split( DELIMITER );
-						expect( idParts[ 0 ] in TYPE ).toBe( true );
+						expect( EventTypes.indexOf( idParts[ 0 ] ) ).toBeGreaterThan( -1 );
 						expect( +idParts[ 1 ] ).toEqual( expect.any( Number ) );
 						map.off( eventType, fn );
 					};
@@ -375,7 +389,7 @@ describe( 'TimedMap', () => {
 							timedMap.clear();
 							const next = () => new Promise( resolve => setTimeout(() => {
 								expect( listenerMock ).not.toHaveBeenCalled();
-								resolve();
+								resolve( undefined );
 							}, 0 ) );
 							await new Promise( resolve => setTimeout( async () => {
 								expect( listenerMock ).toHaveBeenCalledTimes( 1 );
@@ -384,7 +398,7 @@ describe( 'TimedMap', () => {
 								timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
 								timedMap.clear();
 								await next();
-								resolve();
+								resolve( undefined );
 							}, 0 ) );
 						});
 						it( 'is cancelable prior to first use', async () => {
@@ -396,7 +410,7 @@ describe( 'TimedMap', () => {
 							timedMap.clear();
 							await new Promise( resolve => setTimeout(() => {
 								expect( listenerMock ).not.toHaveBeenCalled();
-								resolve();
+								resolve( undefined );
 							}, 0 ) );
 						});
 						it( 'allows user to capture arbitrary data as part of event attributes for later use', async () => {
@@ -410,7 +424,7 @@ describe( 'TimedMap', () => {
 								expect( listenerMock ).toHaveBeenCalledWith(
 									expect.objectContaining({ attributes })
 								);
-								resolve();
+								resolve( undefined );
 							}, 0 ) );
 						});
 					});
@@ -427,7 +441,7 @@ describe( 'TimedMap', () => {
 							timedMap.clear();
 							const next = () => new Promise( resolve => setTimeout(() => {
 								expect( listenerMock ).toHaveBeenCalledTimes( 1 );
-								resolve();
+								resolve( undefined );
 							}, 0 ) );
 							await new Promise( resolve => setTimeout( async () => {
 								expect( listenerMock ).toHaveBeenCalledTimes( 1 );
@@ -436,7 +450,7 @@ describe( 'TimedMap', () => {
 								timedMap.put( ENTRY2_KEY, ENTRY2_VALUE );
 								timedMap.clear();
 								await next();
-								resolve();
+								resolve( undefined );
 							}, 0 ) );
 						});
 						it( 'allows user to capture arbitrary data as part of event attributes for later use', async () => {
@@ -450,7 +464,7 @@ describe( 'TimedMap', () => {
 								expect( listenerMock ).toHaveBeenCalledWith(
 									expect.objectContaining({ attributes })
 								);
-								resolve();
+								resolve( undefined );
 							}, 0 ) );
 						});
 					});
@@ -465,7 +479,7 @@ describe( 'TimedMap', () => {
 						timedMap.clear();
 						const next = () => new Promise( resolve => setTimeout(() => {
 							expect( listenerMock ).not.toHaveBeenCalled();
-							resolve();
+							resolve( undefined );
 						}, 0 ) );
 						await new Promise( resolve => setTimeout( async () => {
 							expect( listenerMock ).toHaveBeenCalledTimes( 1 );
@@ -475,7 +489,7 @@ describe( 'TimedMap', () => {
 							timedMap.off( TYPE.CLEARED, listenerMock );
 							timedMap.clear();
 							await next();
-							resolve();
+							resolve( undefined );
 						}, 0 ) );
 					});
 					test( '`offById` method: remove event listener by event id', async () => {
@@ -486,7 +500,7 @@ describe( 'TimedMap', () => {
 						timedMap.clear();
 						const next = () => new Promise( resolve => setTimeout(() => {
 							expect( listenerMock ).not.toHaveBeenCalled();
-							resolve();
+							resolve( undefined );
 						}, 0 ) );
 						await new Promise( resolve => setTimeout( async () => {
 							expect( listenerMock ).toHaveBeenCalledTimes( 1 );
@@ -496,7 +510,7 @@ describe( 'TimedMap', () => {
 							timedMap.offById( eventId );
 							timedMap.clear();
 							await next();
-							resolve();
+							resolve( undefined );
 						}, 0 ) );
 					});
 				})
@@ -525,7 +539,7 @@ describe( 'TimedMap', () => {
 								type: TYPE.AUTO_RENEWED
 							})
 						});
-						resolve();
+						resolve( undefined );
 					}, 300 ) );
 				})
 			});
@@ -549,7 +563,7 @@ describe( 'TimedMap', () => {
 							},
 							type: TYPE.CLEARED
 						});
-						resolve();
+						resolve( undefined );
 					}, 0 ) );
 				});
 			});
@@ -593,7 +607,7 @@ describe( 'TimedMap', () => {
 							},
 							type: TYPE.PRUNED
 						});
-						resolve();
+						resolve( undefined );
 					}, 300 ) );
 				});
 			});
@@ -623,7 +637,7 @@ describe( 'TimedMap', () => {
 							},
 							type: TYPE.PUT
 						});
-						resolve();
+						resolve( undefined );
 					}, 300 ) );
 					await new Promise( resolve => setTimeout( async () => { // delay adding listener to allow previous `put` tasks to complete
 						putableMap.on( TYPE.PUT, listenerMock );
@@ -631,7 +645,7 @@ describe( 'TimedMap', () => {
 						putableMap.peak( ENTRY2_KEY ); // non-put entry operation
 						putableMap.getEntry( ENTRY2_KEY ); // non-put operation
 						await next();
-						resolve();
+						resolve( undefined );
 					}, 0 ) );
 				});
 			});
@@ -656,7 +670,7 @@ describe( 'TimedMap', () => {
 							},
 							type: TYPE.REMOVED
 						});
-						resolve();
+						resolve( undefined );
 					}, 300 ) );
 				});
 			});
